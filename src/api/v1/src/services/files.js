@@ -8,13 +8,15 @@ class Files {
     constructor (projectName, changesArray) {
         this.projectName = projectName;
         this.changesArray = changesArray;
+        this.creatingScripts = false
     }
 
-    addChanges(changesType, path, fileName, content) {
+    addChanges(changesType, path, fileName, robloxPath, content) {
         this.changesArray.push({
-            type : changesType,
+            changesType : changesType,
             path : path,
             fileName : fileName,
+            robloxPath : robloxPath,
             content : content
         });
     }
@@ -36,30 +38,48 @@ class Files {
         }
     }
 
+    getRobloxFullPath(filePath) {
+        const robloxPath = path.relative(`${this.projectName}/Services`, filePath)
+            .replace(/\\/g, ".");
+                
+        const directories = robloxPath.split('.');
+        const trimmedDirectories = directories.slice(0, -2);
+        const finalRobloxPath = trimmedDirectories.join('.');
+
+        return finalRobloxPath
+    }
+
     createScript(scriptName, robloxPath, content) {
         const directories = robloxPath.split('.').slice(0, -1);
         const folderPath = path.join(...directories);
-
+      
+        this.creatingScripts = true;
+      
         directories.reduce((parentPath, directory) => {
             const currentPath = path.join(parentPath, directory);
             const fullPath = path.join(this.projectName, 'Services', currentPath);
-
+      
             if (!fs.existsSync(fullPath)) {
-            fs.mkdirSync(fullPath);
+              fs.mkdirSync(fullPath);
             }
-
+      
             return currentPath;
         }, '');
-
-        const fullPath = path.join(this.projectName, 'Services', folderPath, `${scriptName}`);
-
+      
+        const fullPath = path.join(this.projectName, 'Services', folderPath, scriptName);
+      
+        if (fs.existsSync(fullPath)) {
+            console.log(`File "${fullPath}" already exists.`);
+            return;
+        }
+      
         fs.writeFile(fullPath, content, (err) => {
             if (err) {
-            console.error(`Error creating script: ${err}`);
-            return;
+                console.error(`Error creating script: ${err}`);
+                return;
             }
-
-            console.log(`Script "${scriptName}" has been created at "${fullPath}"`);
+      
+            // console.log(`Script "${scriptName}" has been created at "${fullPath}"`);
         });
     }
 
@@ -71,18 +91,30 @@ class Files {
         });
 
         watcher.on("add", (filePath) => {
-            console.log(`${filePath} was added!`);
-            this.addChanges("create", filePath, path.basename(filePath), fs.readFileSync(`${filePath}`, "utf8"));
+            if (!this.creatingScripts) {
+                const finalRobloxPath = this.getRobloxFullPath(filePath);
+                
+                console.log(`${filePath} was added!`);
+                this.addChanges("create", filePath, path.basename(filePath), finalRobloxPath, fs.readFileSync(`${filePath}`, "utf8"));
+            }
         })
 
         watcher.on("unlink", (filePath) => {
-            console.log(`${filePath} was removed!`);
-            this.addChanges("remove", filePath, path.basename(filePath), null);
+            if (!this.creatingScripts) {
+                const finalRobloxPath = this.getRobloxFullPath(filePath);
+
+                console.log(`${filePath} was removed!`);
+                this.addChanges("remove", filePath, path.basename(filePath), finalRobloxPath, null);
+            }
         })
 
         watcher.on("change", (filePath) => {
-            console.log(`${filePath} was saved!`);
-            this.addChanges("save", filePath, path.basename(filePath), fs.readFileSync(`${ filePath}`, "utf8"));
+            if (!this.creatingScripts) {
+                const finalRobloxPath = this.getRobloxFullPath(filePath);
+
+                console.log(`${filePath} was saved!`);
+                this.addChanges("save", filePath, path.basename(filePath), finalRobloxPath, fs.readFileSync(`${ filePath}`, "utf8"));
+            }
         })
     }
 }

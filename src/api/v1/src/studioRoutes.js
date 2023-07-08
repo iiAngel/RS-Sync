@@ -11,23 +11,23 @@ let changes = [];
 const projectFs = new files("name", changes);
 
 router.post('/studio', (req, res) => {
-    if (StudioConnected) return res.send({ "message" : "Studio is already connected!" }).status(200);
+    if (StudioConnected) return res.send({ "message" : "Studio is already connected!", "alreadyCreated" : projectAlreadyCreated}).status(200);
 
     const { body } = req;
     const name = body.name;
 
-    projectFs.projectName = name
+    projectFs.projectName = name;
 
     if (!fs.existsSync(name)) {
         projectAlreadyCreated = false;
-        projectFs.createProjectFolders()
+        projectFs.createProjectFolders();
     }
 
-    projectFs.startWatcher()
+    projectFs.startWatcher();
 
     StudioConnected = true;
 
-    return res.send({ "message" : "Studio is connected!", "status" : "Connected", "alreadyCreated" : projectAlreadyCreated});
+    return res.send({ "message" : "Studio is connected!", "status" : "Connected", "alreadyCreated" : projectAlreadyCreated}).status(200);
 })
 
 router.get('/changes', (req, res) => {
@@ -35,7 +35,7 @@ router.get('/changes', (req, res) => {
 
     const resWithChanges = () => {
         res.json({ changes }).status(200);
-        projectFs.clearChanges()
+        projectFs.clearChanges();
         return;
     };
 
@@ -59,21 +59,25 @@ router.post('/newscript', (req, res) => {
 
     switch (body.scriptType) {
         case "Script":
-            scriptName = body.name + ".server.lua"
+            scriptName = body.name + ".server.lua";
             break;
         case "LocalScript":
-            scriptName = body.name + ".client.lua"
+            scriptName = body.name + ".client.lua";
             break;
         case "ModuleScript":
-            scriptName = body.name + ".module.lua"
+            scriptName = body.name + ".module.lua";
             break;
         default:
             break;
     }
 
-    projectFs.createScript(scriptName, body.robloxPath, body.content)
+    projectFs.createScript(scriptName, body.robloxPath, body.content);
 
     res.send({"status" : "Created"});
+
+    projectFs.creatingScripts =  false;
+
+    return
 })
 
 module.exports = router
