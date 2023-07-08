@@ -1,0 +1,2 @@
+-- [[ SERVER ]]
+local a = "variable"

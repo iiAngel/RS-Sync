@@ -1,42 +1,54 @@
 const fs = require('node:fs');
+const path = require('node:path')
 const chokidar = require('chokidar');
 
-class files {
+class Files {
     constructor (projectName, changesArray) {
         this.projectName = projectName;
         this.changesArray = changesArray;
     }
 
-    AddChanges(changesType, fileName, content) {
+    addChanges(changesType, path, fileName, content) {
         this.changesArray.push({
             type : changesType,
-            filename : fileName,
+            path : path,
+            fileName : fileName,
             content : content
         });
     }
 
-    CreateProjectFolders() {
-        console.log("Creating project dirs.");
-        // Make project dirs
-        fs.mkdirSync(this.projectName);
-        fs.mkdirSync(`${this.projectName}/Services`);
-        fs.mkdirSync(`${this.projectName}/Services/ReplicatedStorage`);
-        fs.mkdirSync(`${this.projectName}/Services/ServerScriptService`);
+    clearChanges() {
+        this.changesArray.length = 0; 
     }
 
-    StartWatcher() {
-        const watcher = chokidar.watch(`${this.projectName}/`,  { ignored: /^\./, persistent: true });
+    createProjectFolders() {
+        console.log("Creating project dirs.");
+        // Make project dirs
+        let ServicesPath = `${this.projectName}/Services`
+
+        fs.mkdirSync(this.projectName);
+        fs.mkdirSync(ServicesPath);
+        fs.mkdirSync(ServicesPath + "/ReplicatedStorage");
+        fs.mkdirSync(ServicesPath + "/ServerScriptService");
+    }
+
+    startWatcher() {
+        const watcher = chokidar.watch(`${this.projectName}/`,  {
+            ignored: /^\./,
+            persistent: true,
+            ignoreInitial: true
+        });
 
         watcher.on("add", (filePath) => {
             console.log(`${filePath} was added!`);
-            this.AddChanges("create", filePath, fs.readFileSync(`${filePath}`, "utf8"));
+            this.addChanges("create", filePath, path.basename(filePath), fs.readFileSync(`${filePath}`, "utf8"));
         })
 
         watcher.on("change", (filePath) => {
             console.log(`${filePath} was saved!`);
-            this.AddChanges("save", filePath, fs.readFileSync(`${ filePath}`, "utf8"));
+            this.addChanges("save", filePath, path.basename(filePath), fs.readFileSync(`${ filePath}`, "utf8"));
         })
     }
 }
 
-module.exports = files
+module.exports = Files

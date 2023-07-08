@@ -11,5 +11,5 @@ app.use('/api/v1', studioRoutes)
 app.use(express.static(__dirname + "\\public\\"))
 
 app.listen(PORT, () => {
-    console.log('Listening 4000');
+    console.log(`Listening port ${PORT}`);
 })

@@ -4,7 +4,10 @@ const express = require('express');
 const router = express.Router();
 
 let StudioConnected = false;
+let projectName;
 let changes = [];
+
+const projectFs = new files("name", changes);
 
 router.post('/studio', (req, res) => {
     if (StudioConnected) return res.send({ "message" : "Studio is already connected!" }).status(200);
@@ -12,13 +15,13 @@ router.post('/studio', (req, res) => {
     const { body } = req;
     const name = body.name;
 
-    const projectFs = new files(name, changes);
+    projectFs.projectName = name
 
     if (!fs.existsSync(name)) {
-        projectFs.CreateProjectFolders()
+        projectFs.createProjectFolders()
     }
-    
-    projectFs.StartWatcher()
+
+    projectFs.startWatcher()
 
     StudioConnected = true;
 
@@ -30,7 +33,7 @@ router.get('/changes', (req, res) => {
 
     const resWithChanges = () => {
         res.json({ changes }).status(200);
-        changes = [];
+        projectFs.clearChanges()
         return;
     };
 
@@ -39,8 +42,8 @@ router.get('/changes', (req, res) => {
     } else {
         const interval = setInterval(() => {
             if (changes.length > 0) {
-                clearInterval(interval);
                 resWithChanges();
+                clearInterval(interval);
             }
         }, intervalDuration);
     }
