@@ -2,6 +2,8 @@ const fs = require('node:fs');
 const path = require('node:path')
 const chokidar = require('chokidar');
 
+const services = ["ServerScriptService", "ReplicatedStorage"]
+
 class Files {
     constructor (projectName, changesArray) {
         this.projectName = projectName;
@@ -24,12 +26,41 @@ class Files {
     createProjectFolders() {
         console.log("Creating project dirs.");
         // Make project dirs
-        let ServicesPath = `${this.projectName}/Services`
+        let ServicesPath = `${this.projectName}/Services/`
 
         fs.mkdirSync(this.projectName);
         fs.mkdirSync(ServicesPath);
-        fs.mkdirSync(ServicesPath + "/ReplicatedStorage");
-        fs.mkdirSync(ServicesPath + "/ServerScriptService");
+
+        for (let i=0; i<services.length; i++) {
+            fs.mkdirSync(ServicesPath + services[i]);
+        }
+    }
+
+    createScript(scriptName, robloxPath, content) {
+        const directories = robloxPath.split('.').slice(0, -1);
+        const folderPath = path.join(...directories);
+
+        directories.reduce((parentPath, directory) => {
+            const currentPath = path.join(parentPath, directory);
+            const fullPath = path.join(this.projectName, 'Services', currentPath);
+
+            if (!fs.existsSync(fullPath)) {
+            fs.mkdirSync(fullPath);
+            }
+
+            return currentPath;
+        }, '');
+
+        const fullPath = path.join(this.projectName, 'Services', folderPath, `${scriptName}`);
+
+        fs.writeFile(fullPath, content, (err) => {
+            if (err) {
+            console.error(`Error creating script: ${err}`);
+            return;
+            }
+
+            console.log(`Script "${scriptName}" has been created at "${fullPath}"`);
+        });
     }
 
     startWatcher() {
@@ -42,6 +73,11 @@ class Files {
         watcher.on("add", (filePath) => {
             console.log(`${filePath} was added!`);
             this.addChanges("create", filePath, path.basename(filePath), fs.readFileSync(`${filePath}`, "utf8"));
+        })
+
+        watcher.on("unlink", (filePath) => {
+            console.log(`${filePath} was removed!`);
+            this.addChanges("remove", filePath, path.basename(filePath), null);
         })
 
         watcher.on("change", (filePath) => {

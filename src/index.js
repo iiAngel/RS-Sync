@@ -3,7 +3,8 @@ const app = express();
 // Routes
 const studioRoutes = require('./api/v1/src/studioRoutes')
 // App config
-const PORT = 4000;
+require('dotenv').config();
+const PORT = process.env.HOST_PORT;
 
 // Config routes
 app.use(express.json())

@@ -1,2 +1,0 @@
--- [[ SERVER ]]
-local a = "variable"

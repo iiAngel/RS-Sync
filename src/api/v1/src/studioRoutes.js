@@ -5,6 +5,7 @@ const router = express.Router();
 
 let StudioConnected = false;
 let projectName;
+let projectAlreadyCreated = true;
 let changes = [];
 
 const projectFs = new files("name", changes);
@@ -18,6 +19,7 @@ router.post('/studio', (req, res) => {
     projectFs.projectName = name
 
     if (!fs.existsSync(name)) {
+        projectAlreadyCreated = false;
         projectFs.createProjectFolders()
     }
 
@@ -25,7 +27,7 @@ router.post('/studio', (req, res) => {
 
     StudioConnected = true;
 
-    return res.send({ "message" : "Studio is connected!"});
+    return res.send({ "message" : "Studio is connected!", "status" : "Connected", "alreadyCreated" : projectAlreadyCreated});
 })
 
 router.get('/changes', (req, res) => {
@@ -53,11 +55,25 @@ router.get('/changes', (req, res) => {
 router.post('/newscript', (req, res) => {
     const { body } = req;
 
-    fs.writeFile(body.name + ".lua", body.content, () => {
-        console.log("Script \"" + body.name + "\" has been created!");
-    })
+    let scriptName = ""
 
-    res.sendStatus(200);
+    switch (body.scriptType) {
+        case "Script":
+            scriptName = body.name + ".server.lua"
+            break;
+        case "LocalScript":
+            scriptName = body.name + ".client.lua"
+            break;
+        case "ModuleScript":
+            scriptName = body.name + ".module.lua"
+            break;
+        default:
+            break;
+    }
+
+    projectFs.createScript(scriptName, body.robloxPath, body.content)
+
+    res.send({"status" : "Created"});
 })
 
 module.exports = router
